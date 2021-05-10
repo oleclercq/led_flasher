@@ -1,8 +1,9 @@
 #define EACH_100MS (20)
 #define EACH_10MS (2)
 
-#define  DUREE_LED_ON  2	   // multiple de 10 ms
-#define  DUREE_LED_OFF 50      // multiple de 10 ms
+#define  DUREE_FLASH_1  	2	   // multiple de 10 ms
+#define  DUREE_FLASH_2  	3	   // multiple de 10 ms
+#define  DUREE_INTER_FLASH  10	   // multiple de 10 ms
 
 
 // ------------------------------------------------------------
@@ -11,21 +12,24 @@
 
 // DEFINITIONS DES PINs En FONCTION DE LA CIBLE 
   #define PIN_EMBEDED_LED  (13)
+  
+typedef enum { FLASH_1,  INTER_FLASH,  FLASH_2 ,  PAUSE } EN_ETAT_LED;
 
 // Structure d'etat d'une LED
 typedef struct {   
                    int pinLED;        	// pin à la quelle est affectée la led
-				   bool etat;        	// etat de la led (off, On)
-                   int tempo_etat_off;      //!  temps ou la led est off
-				   int tempo_etat_on;       //!  temps ou la led est on
-                 } ST_ETAT_LED;
+				   bool etatLed;        	// etat de la led (off, On)
+				   EN_ETAT_LED etat;  
+				   int tempo;        	//!  varaible pour gerer les différents temps d'attente entre chaque état
+				   int interval;       	//!  temps ou la led est off (ne varie pas, référence)
+                 } ST_PILOT_LED;
 
 // Initialisation du tableau contenant les structure de chaque led.
-  ST_ETAT_LED tabLed[NB_LED] = {{8,false,  DUREE_LED_OFF,DUREE_LED_ON},
-								{9,false,  DUREE_LED_OFF*2,DUREE_LED_ON}, 
-								{10,false, DUREE_LED_OFF*3,DUREE_LED_ON},
-								{11,false, DUREE_LED_OFF*4,DUREE_LED_ON},
-								{12,false, DUREE_LED_OFF*5,DUREE_LED_ON} }; 
+  ST_PILOT_LED tabLed[NB_LED] = {{8,true, FLASH_1, DUREE_FLASH_1 ,100 },
+								{9, true, FLASH_1, DUREE_FLASH_1 ,200 }, 
+								{10,true, FLASH_1, DUREE_FLASH_1 ,400 },
+								{11,true, FLASH_1, DUREE_FLASH_1 ,800 },
+								{12,true, FLASH_1, DUREE_FLASH_1 ,1600 } }; 
 
 // Protoypage  
 void calcbright(const int channel);
@@ -90,7 +94,7 @@ void action(void)
 		// digitalWrite(tabLed[i].pinLED,onoff);
 		
 		calcbright(i);
-		digitalWrite(tabLed[i].pinLED,tabLed[i].etat);
+		digitalWrite(tabLed[i].pinLED,tabLed[i].etatLed);
 		
 	}
 }
@@ -111,17 +115,36 @@ void loop() {
 /* *********************************************************************** */
 void calcbright(const int channel)
 {
-	if (tabLed[channel].etat)	//La LED est ALLUMEE, on vérifie que son temp d'allumage n'est pas atteind
+	
+	switch(tabLed[channel].etat)
 	{
-		if(tabLed[channel].tempo_etat_on--  <= 0 ) {
-			tabLed[channel].etat = false; // Sa durée a ALLUMEE est passé, son état devient ETEIND
-			tabLed[channel].tempo_etat_on = DUREE_LED_ON; // On replace la valeur pour la prochaine fois
-		}
-	} else {
-		if(tabLed[channel].tempo_etat_off--  <= 0 ) {
-			tabLed[channel].etat = true; // Sa durée a ETEIND est passé, son état devient ALLUMEE
-			tabLed[channel].tempo_etat_off = DUREE_LED_OFF; // On replace la valeur pour la prochaine fois
-		}
+		case FLASH_1: 	  
+			if(tabLed[channel].tempo--  <= 0 ) {
+				tabLed[channel].etat = INTER_FLASH; // La prochaine étape sera d'eteindre la led entre les deux flashs
+				tabLed[channel].etatLed = false; 
+				tabLed[channel].tempo = DUREE_INTER_FLASH; // On place la prochaine durée
+			}
+			break;
+		case INTER_FLASH: 
+			if(tabLed[channel].tempo--  <= 0 ) {
+				tabLed[channel].etat = FLASH_2; // La prochaine étape sera d'allumée la led pour le deuxime falsh
+				tabLed[channel].etatLed = true; 
+				tabLed[channel].tempo = DUREE_FLASH_2; // On place la prochaine durée
+			}
+			break;
+		case FLASH_2: 	  
+			if(tabLed[channel].tempo--  <= 0 ) {
+				tabLed[channel].etat = PAUSE; // La prochaine étape ser d'eteindre la led pendant qqs seconde
+				tabLed[channel].etatLed = false; 
+				tabLed[channel].tempo = tabLed[channel].interval; // On place la prochaine durée propre à chaque led
+			}break;  
+		default: //PAUSE 
+			if(tabLed[channel].tempo--  <= 0 ) {
+				tabLed[channel].etat = FLASH_1; // La prochaine étape sera d'allumer la led pendant qqs seconde
+				tabLed[channel].etatLed = true; 
+				tabLed[channel].tempo = DUREE_FLASH_1 ; // On place la prochaine durée
+			}break;
+		
 	}
 }
 
