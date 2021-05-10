@@ -25,11 +25,11 @@ typedef struct {
                  } ST_PILOT_LED;
 
 // Initialisation du tableau contenant les structure de chaque led.
-  ST_PILOT_LED tabLed[NB_LED] = {{8,true, FLASH_1, DUREE_FLASH_1 ,100 },
-								{9, true, FLASH_1, DUREE_FLASH_1 ,200 }, 
-								{10,true, FLASH_1, DUREE_FLASH_1 ,400 },
-								{11,true, FLASH_1, DUREE_FLASH_1 ,800 },
-								{12,true, FLASH_1, DUREE_FLASH_1 ,1600 } }; 
+  ST_PILOT_LED tabLed[NB_LED] = {{8,true, FLASH_1, DUREE_FLASH_1 ,100-15}, //100 c'est 100x10ms soit une seconde, et le -15 c'est le tempsdu pulse.
+								{9, true, FLASH_1, DUREE_FLASH_1 ,200-15 }, 
+								{10,true, FLASH_1, DUREE_FLASH_1 ,300-15 },
+								{11,true, FLASH_1, DUREE_FLASH_1 ,400-15 },
+								{12,true, FLASH_1, DUREE_FLASH_1 ,500-15 } }; 
 
 // Protoypage  
 void calcbright(const int channel);
